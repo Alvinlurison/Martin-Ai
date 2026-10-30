@@ -1,4 +1,4 @@
-const CACHE = "martin-v6";
+const CACHE = "martin-v8";
 const BASE = "/MARTIN/";
 const FILES = [BASE, BASE + "index.html", BASE + "manifest.json", BASE + "logo.png"];
 

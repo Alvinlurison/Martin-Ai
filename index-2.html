@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>MARTIN</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#02060f" />
+  <link rel="apple-touch-icon" href="logo.png" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: #02060f;
+      color: #e8f4ff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    /* starfield-ish bg */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, #0a2a5c44, transparent),
+        radial-gradient(circle at 20% 80%, #061428, transparent 40%),
+        radial-gradient(circle at 80% 70%, #0a1a30, transparent 35%),
+        #02060f;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+    /* TOP ORB SECTION */
+    .hero {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.2rem 1rem 0.6rem;
+      position: relative;
+    }
+    .gear {
+      position: absolute; top: 0.8rem; right: 1rem;
+      background: transparent; border: 1px solid #1a3a5c;
+      color: #6a9aba; width: 40px; height: 40px; border-radius: 50%;
+      cursor: pointer; font-size: 1.1rem;
+    }
+    .orb-wrap {
+      position: relative;
+      width: min(42vw, 180px);
+      height: min(42vw, 180px);
+      margin: 0.3rem auto 0.5rem;
+    }
+    .orb-ring {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 1px solid #1a6cff33;
+      animation: spin 20s linear infinite;
+    }
+    .orb-ring:nth-child(2) {
+      inset: 8%;
+      border-color: #00d4ff22;
+      border-style: dashed;
+      animation-duration: 14s;
+      animation-direction: reverse;
+    }
+    .orb-ring:nth-child(3) {
+      inset: 18%;
+      border-color: #3d8fd444;
+      animation-duration: 25s;
+    }
+    .orb-core {
+      position: absolute;
+      inset: 22%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #7ec8ff, #1a6cff 45%, #0a3070 70%, #041028);
+      box-shadow:
+        0 0 40px #1a6cff88,
+        0 0 80px #0a4aaa44,
+        inset 0 0 30px #a0e0ff44;
+      animation: pulse 3s ease-in-out infinite;
+    }
+    .orb-core.listening {
+      box-shadow: 0 0 50px #ff4d4d88, 0 0 90px #ff4d4d33;
+      background: radial-gradient(circle at 35% 30%, #ff8a8a, #cc2244 50%, #400010);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.35em;
+      margin-top: 0.2rem;
+    }
+    .title span { color: #5eb8ff; }
+    .sub {
+      font-size: 0.75rem;
+      color: #4a7a9a;
+      margin-top: 0.2rem;
+      letter-spacing: 0.08em;
+    }
+    .sub .on { color: #3dcea0; }
+
+    /* CHAT */
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.8rem 1rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .row { max-width: 720px; width: 100%; margin: 0 auto; animation: in 0.25s ease; }
+    @keyframes in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .bubble {
+      padding: 0.8rem 1.05rem;
+      border-radius: 14px;
+      line-height: 1.5;
+      font-size: 0.92rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .you { display: flex; justify-content: flex-end; }
+    .you .bubble {
+      background: linear-gradient(135deg, #0d3a6e, #0a2860);
+      border: 1px solid #1a5a9a;
+      max-width: 85%;
+      border-bottom-right-radius: 4px;
+    }
+    .martin .bubble {
+      background: rgba(8, 16, 32, 0.9);
+      border: 1px solid #1a3a5c;
+      max-width: 92%;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 0 24px #0a204022;
+      backdrop-filter: blur(8px);
+    }
+    .label {
+      font-size: 0.65rem;
+      color: #4a6a8a;
+      margin-bottom: 0.2rem;
+      letter-spacing: 0.1em;
+    }
+    .you .label { text-align: right; }
+
+    /* COMPOSER */
+    .composer {
+      flex-shrink: 0;
+      padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, #02060f 30%);
+      border-top: 1px solid #0e1e35;
+    }
+    .composer-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+    }
+    .composer input {
+      flex: 1;
+      background: rgba(10, 20, 40, 0.9);
+      border: 1px solid #1a3a5c;
+      border-radius: 28px;
+      padding: 0.8rem 1.15rem;
+      color: #e8f4ff;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .composer input:focus {
+      border-color: #3d8fd4;
+      box-shadow: 0 0 16px #1a6cff33;
+    }
+    .composer .icon-btn {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      border: 1px solid #1a3a5c;
+      background: rgba(10, 24, 48, 0.95);
+      color: #5eb8ff;
+      font-size: 1.15rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .composer .send-btn {
+      background: linear-gradient(145deg, #1a8cff, #0a4aad);
+      border: none;
+      color: #fff;
+    }
+    #micBtn.listening {
+      background: #4a1020;
+      border-color: #ff4d4d;
+      color: #ff6b6b;
+    }
+    .hints {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #3a5570;
+      margin-top: 0.35rem;
+    }
+
+    /* settings modal */
+    #settingsModal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8); z-index: 50;
+      align-items: center; justify-content: center; padding: 1rem;
+    }
+    #settingsModal .panel {
+      background: #0a1528;
+      border: 1px solid #1a4a7a;
+      border-radius: 16px;
+      padding: 1.4rem;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 0 40px #0a3a6a44;
+    }
+    #settingsModal h3 { margin-bottom: 0.6rem; letter-spacing: 0.08em; }
+    #settingsModal p { font-size: 0.8rem; color: #6a8aaa; margin-bottom: 0.6rem; }
+    #settingsModal input[type=password],
+    #settingsModal input[type=text] {
+      width: 100%; padding: 0.7rem 0.9rem;
+      background: #060e18; border: 1px solid #1a3a5c;
+      border-radius: 10px; color: #e8f4ff; margin-bottom: 0.55rem;
+    }
+    #settingsModal .actions { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+    #settingsModal .actions button {
+      flex: 1; padding: 0.7rem; border-radius: 10px; cursor: pointer; font-weight: 600;
+    }
+    .btn-close { background: #122036; border: 1px solid #1a3a5c; color: #8aa; }
+    .btn-save { background: linear-gradient(145deg, #1a8cff, #0a4aad); border: none; color: #fff; }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+      .orb-wrap { width: 90px; height: 90px; margin: 0.2rem auto; }
+      .title { font-size: 1.1rem; }
+      .hero { padding: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="hero">
+      <button class="gear" onclick="openSettings()" title="Settings">⚙</button>
+      <div class="orb-wrap" id="orbWrap">
+        <div class="orb-ring"></div>
+        <div class="orb-ring"></div>
+        <div class="orb-ring"></div>
+        <div class="orb-core" id="orbCore"></div>
+      </div>
+      <div class="title">MAR<span>TIN</span></div>
+      <div class="sub"><span class="on" id="netStatus">● Online</span></div>
+    </div>
+
+    <div id="log"></div>
+
+    <div class="composer">
+      <div class="composer-inner">
+        <button type="button" class="icon-btn" id="micBtn" onclick="toggleVoice()">🎤</button>
+        <input type="text" id="input" placeholder="Address MARTIN…" autocomplete="off" />
+        <button type="button" class="icon-btn send-btn" onclick="submit()">➤</button>
+      </div>
+      <div class="hints">Speak or type · AI mode when API key is set</div>
+    </div>
+  </div>
+
+  <div id="settingsModal">
+    <div class="panel">
+      <h3>SETTINGS</h3>
+      <p>Paste your Groq (or OpenAI-compatible) API key. Stored only on this device.</p>
+      <input type="password" id="apiKeyInput" placeholder="API key" />
+      <input type="text" id="apiBaseInput" placeholder="API base (optional)" />
+      <p style="font-size:0.72rem;">Default base: https://api.groq.com/openai/v1</p>
+      <label style="font-size:0.85rem; color:#8aa; display:flex; gap:0.5rem; align-items:center;">
+        <input type="checkbox" id="voiceOutCheck" /> Speak replies
+      </label>
+      <div class="actions">
+        <button type="button" class="btn-close" onclick="closeSettings()">Close</button>
+        <button type="button" class="btn-save" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const logEl = document.getElementById("log");
+    const input = document.getElementById("input");
+    const NOTES_KEY = "martin_notes_v1";
+
+    function tick() {
+      const online = navigator.onLine;
+      const el = document.getElementById("netStatus");
+      el.textContent = online ? "● Online" : "● Offline mode";
+      el.className = online ? "on" : "";
+    }
+    tick();
+    setInterval(tick, 5000);
+    window.addEventListener("online", tick);
+    window.addEventListener("offline", tick);
+
+    function add(role, text) {
+      const row = document.createElement("div");
+      row.className = "row " + role;
+      row.innerHTML = '<div class="label">' + (role === "you" ? "YOU" : "MARTIN") + '</div><div class="bubble"></div>';
+      row.querySelector(".bubble").textContent = text;
+      logEl.appendChild(row);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function getNotes() {
+      try { return JSON.parse(localStorage.getItem(NOTES_KEY) || "[]"); } catch { return []; }
+    }
+    function saveNotes(arr) { localStorage.setItem(NOTES_KEY, JSON.stringify(arr)); }
+
+    function reply(msg) {
+      const q = msg.trim();
+      const lower = q.toLowerCase().replace(/\s+/g, " ");
+      if (!q) return "I'm here. What do you need?";
+
+      if (/^(hi+|h+e+y+|hello|good\s*(morning|afternoon|evening)|greetings|yo+|sup)\b/.test(lower)) {
+        const h = new Date().getHours();
+        const part = h < 12 ? "morning" : h < 18 ? "afternoon" : "evening";
+        return "Good " + part + ". What can I help you with?";
+      }
+      if (/^(thanks|thank you|thx|ty)\b/.test(lower)) return "No problem.";
+      if (/how are you|how do you do|are you (ok|okay|there)/.test(lower))
+        return "I'm good — ready when you are.";
+      if (/who are you|your name|what are you|what is martin/.test(lower))
+        return "I'm MARTIN — your assistant. I can handle time, notes, calc, links, and general questions.";
+      if (/who (made|built|created) you|your (creator|developer|owner)/.test(lower))
+        return "I was built for Alvin (Adeka). I'm his assistant.";
+      if (/^help$|what can you do|commands/.test(lower)) {
+        return "Commands: time · date · note <text> · notes · clear notes · calc <expr> · open <url> · coretalk · adekacore · clear · help\nWith an API key: ask anything.";
+      }
+      if (/^(time|what time|current time|tell me the time)/.test(lower))
+        return "The time is " + new Date().toLocaleTimeString() + ".";
+      if (/^(date|what(?:'s| is) the date|today|current date|what day)/.test(lower))
+        return "Today is " + new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }) + ".";
+
+      const noteMatch = lower.match(/^(note|remember|save note)\s+(.+)/);
+      if (noteMatch) {
+        const textNote = q.replace(/^(note|remember|save note)\s+/i, "").trim();
+        const notes = getNotes();
+        notes.push({ text: textNote, at: new Date().toISOString() });
+        saveNotes(notes);
+        return "Got it — saved: \"" + textNote + "\".";
+      }
+      if (/^(notes|list notes|show notes|my notes)/.test(lower)) {
+        const notes = getNotes();
+        if (!notes.length) return "No notes saved yet.";
+        return "Your notes:\n" + notes.map((n, i) => (i + 1) + ". " + n.text).join("\n");
+      }
+      if (/^(clear notes|delete notes|erase notes)/.test(lower)) {
+        saveNotes([]);
+        return "Notes cleared.";
+      }
+
+      const calcMatch = lower.match(/^(calc|calculate|compute)\s+(.+)/) ||
+                        lower.match(/^(what is|what's)\s+([\d\s+\-*/().%]+)\s*\??$/);
+      if (calcMatch) {
+        const expr = (calcMatch[2] || "").replace(/[^0-9+\-*/().%\s]/g, "");
+        try {
+          const result = Function('"use strict"; return (' + expr + ")")();
+          if (typeof result === "number" && isFinite(result)) return "Result: " + result;
+        } catch (e) {}
+        return "Couldn't calculate that. Try: calc 15*4";
+      }
+
+      if (/core\s*talk|open core\s*talk/.test(lower)) {
+        window.open("https://alvinlurison.github.io/CoreTalk/", "_blank", "noopener");
+        return "Opening CoreTalk…";
+      }
+      if (/adeka\s*core|open adeka\s*core/.test(lower)) {
+        window.open("https://alvinlurison.github.io/AdekaCore-/", "_blank", "noopener");
+        return "Opening AdekaCore…";
+      }
+
+      const openMatch = lower.match(/^(open|go to|browse)\s+(.+)/);
+      if (openMatch) {
+        let url = openMatch[2].trim();
+        if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+        try { window.open(url, "_blank", "noopener"); return "Opening " + url + "."; }
+        catch (e) { return "Couldn't open that link."; }
+      }
+
+      if (/^clear$|clear chat|clear screen|clear conversation/.test(lower)) {
+        logEl.innerHTML = "";
+        return "Chat cleared. Still here.";
+      }
+      if (/good (night|nighty)/.test(lower)) return "Good night. I'll be here when you're back.";
+      if (/are you (real|ai|a bot|human)/.test(lower))
+        return "I'm a software assistant on your device — ask me anything.";
+
+      return null; // signal: try AI
+    }
+
+    function isLocalCommand(lower) {
+      return /^(hi+|h+e+y+|hello|good\s*(morning|afternoon|evening)|greetings|yo+|sup)\b/.test(lower)
+        || /^(thanks|thank you|thx|ty)\b/.test(lower)
+        || /how are you|who are you|your name|what are you|who (made|built|created) you/.test(lower)
+        || /^(help|time|date|notes|clear notes|clear$|what time|what date)/.test(lower)
+        || /^(note|remember|save note|calc|calculate|compute|open|go to|browse)\s+/.test(lower)
+        || /core\s*talk|adeka\s*core/.test(lower)
+        || /^(what is|what's)\s+[\d\s+\-*/().%]+/.test(lower)
+        || /good (night|nighty)|are you (real|ai|a bot|human)/.test(lower);
+    }
+
+    // Default key (device-local use). Override anytime in Settings.
+    const MARTIN_DEFAULT_KEY = "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";
+    const MARTIN_DEFAULT_BASE = "https://api.groq.com/openai/v1";
+
+    async function askAI(userMsg) {
+      const system = "You are MARTIN, a helpful personal assistant for Alvin (Adeka). Talk in a natural, friendly, clear way — not stiff or overly formal. Keep answers concise. Avoid saying hey.";
+      const key = localStorage.getItem("martin_api_key") || MARTIN_DEFAULT_KEY || "";
+      const base = (localStorage.getItem("martin_api_base") || MARTIN_DEFAULT_BASE).replace(/\/$/, "");
+
+      // 1) Try Groq / OpenAI-compatible if key exists
+      if (key) {
+        const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it"];
+        for (const model of models) {
+          try {
+            const res = await fetch(base + "/chat/completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + key
+              },
+              body: JSON.stringify({
+                model,
+                messages: [
+                  { role: "system", content: system },
+                  { role: "user", content: userMsg }
+                ],
+                temperature: 0.55,
+                max_tokens: 600
+              })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+              if (content) return content;
+            } else {
+              const errText = await res.text().catch(() => "");
+              console.warn("AI HTTP", res.status, errText.slice(0, 200));
+              // 401 = bad key; don't try other models
+              if (res.status === 401 || res.status === 403) {
+                return "API key was rejected. Add a new one in Settings.";
+              }
+            }
+          } catch (e) {
+            console.warn("Groq fetch failed (often CORS from browser)", e);
+            break; // fall through to backup
+          }
+        }
+      }
+
+      // 2) Backup: Pollinations (works from browser, no key required)
+      try {
+        const prompt = system + "\n\nUser: " + userMsg + "\nMARTIN:";
+        const url = "https://text.pollinations.ai/" + encodeURIComponent(prompt) + "?model=openai&max_tokens=500";
+        const res = await fetch(url);
+        if (res.ok) {
+          const text = (await res.text()).trim();
+          if (text) return text;
+        }
+      } catch (e) {
+        console.warn("Backup AI failed", e);
+      }
+
+      // 3) Second backup: Pollinations OpenAI-compatible POST
+      try {
+        const res = await fetch("https://text.pollinations.ai/openai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "openai",
+            messages: [
+              { role: "system", content: system },
+              { role: "user", content: userMsg }
+            ]
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (content) return content;
+          if (typeof data === "string") return data;
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+
+      return "Couldn't reach the AI service right now. Time, notes, and calc still work.";
+    }
+
+    function speak(text) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0;
+      u.pitch = 0.75; // lower = more masculine
+      const voices = window.speechSynthesis.getVoices();
+      // Prefer clearly male English voices
+      const maleName = /david|mark|daniel|james|thomas|alex|fred|microsoft david|google uk english male|male/i;
+      const prefer =
+        voices.find(v => /^en/i.test(v.lang) && maleName.test(v.name)) ||
+        voices.find(v => /en(-|_)GB/i.test(v.lang) && !/female|zira|susan|hazel|samantha|karen|moira/i.test(v.name)) ||
+        voices.find(v => /^en/i.test(v.lang) && !/female|zira|susan|hazel|samantha|karen|moira|victoria|linda/i.test(v.name)) ||
+        voices.find(v => /^en/i.test(v.lang));
+      if (prefer) u.voice = prefer;
+      window.speechSynthesis.speak(u);
+    }
+
+    let recognizing = false, recognition = null;
+    function toggleVoice() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { add("martin", "Voice input is not supported in this browser."); return; }
+      if (recognizing && recognition) { recognition.stop(); return; }
+      recognition = new SR();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.onstart = () => {
+        recognizing = true;
+        document.getElementById("micBtn").classList.add("listening");
+        document.getElementById("orbCore").classList.add("listening");
+        document.getElementById("netStatus").textContent = "● Listening…";
+      };
+      recognition.onend = () => {
+        recognizing = false;
+        document.getElementById("micBtn").classList.remove("listening");
+        document.getElementById("orbCore").classList.remove("listening");
+        tick();
+      };
+      recognition.onerror = recognition.onend;
+      recognition.onresult = (e) => {
+        const said = (e.results[0][0].transcript || "").trim();
+        if (!said) return;
+        input.value = said;
+        submit(true);
+      };
+      recognition.start();
+    }
+
+    function openSettings() {
+      document.getElementById("apiKeyInput").value = localStorage.getItem("martin_api_key") || MARTIN_DEFAULT_KEY || "";
+      document.getElementById("apiBaseInput").value = localStorage.getItem("martin_api_base") || "";
+      document.getElementById("voiceOutCheck").checked = localStorage.getItem("martin_voice_out") !== "off";
+      document.getElementById("settingsModal").style.display = "flex";
+    }
+    function closeSettings() { document.getElementById("settingsModal").style.display = "none"; }
+    function saveSettings() {
+      localStorage.setItem("martin_api_key", document.getElementById("apiKeyInput").value.trim());
+      localStorage.setItem("martin_api_base", document.getElementById("apiBaseInput").value.trim());
+      localStorage.setItem("martin_voice_out", document.getElementById("voiceOutCheck").checked ? "on" : "off");
+      closeSettings();
+      add("martin", "Settings saved.");
+    }
+
+    async function submit(fromVoice) {
+      const q = input.value.trim();
+      if (!q) return;
+      add("you", q);
+      input.value = "";
+      const lower = q.toLowerCase().replace(/\s+/g, " ");
+      let a = reply(q);
+      const key = localStorage.getItem("martin_api_key") || MARTIN_DEFAULT_KEY;
+
+      if (a === null || (key && navigator.onLine && !isLocalCommand(lower))) {
+        if (key && navigator.onLine) {
+          add("martin", "Processing…");
+          const ai = await askAI(q);
+          const rows = logEl.querySelectorAll(".row.martin");
+          if (rows.length) rows[rows.length - 1].remove();
+          a = ai || "Couldn't complete that.";
+        } else if (a === null) {
+          a = key
+            ? "I need internet for that one."
+            : "Try time, notes, calc, help — or ask a normal question if AI is on.";
+        }
+      }
+
+      add("martin", a);
+      const voiceOn = localStorage.getItem("martin_voice_out") !== "off";
+      if (voiceOn || fromVoice) speak(a);
+    }
+
+    input.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+
+    add("martin", "MARTIN online. What do you need?");
+    if (window.speechSynthesis) speechSynthesis.getVoices();
+    setTimeout(() => {
+      if (localStorage.getItem("martin_voice_out") !== "off")
+        speak("MARTIN online. What do you need?");
+    }, 500);
+
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  </script>
+</body>
+</html>
